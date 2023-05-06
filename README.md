@@ -8,4 +8,6 @@
 
 - reference 6: the alpha net for factor generation
 
+- reference 7: the FactorAVE for factor generation
+
 - proposal.png: A brief proposal
