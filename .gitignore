@@ -1,0 +1,9 @@
+# Dataset which is too large to push
+/data/dataset_tensor/train/*.txt
+/data/dataset_tensor/train/*.pt
+
+/data/dataset_tensor/test/*.txt
+/data/dataset_tensor/test/*.pt
+
+/data/dataset_tensor/val/*.txt
+/data/dataset_tensor/val/*.pt
