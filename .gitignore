@@ -5,5 +5,11 @@
 /data/dataset_tensor/test/*.txt
 /data/dataset_tensor/test/*.pt
 
-/data/dataset_tensor/val/*.txt
-/data/dataset_tensor/val/*.pt
+/data/dataset_tensor/eval/*.txt
+/data/dataset_tensor/eval/*.pt
+
+/data/dataset_per_stocks/
+/data/dataset_qlib/
+
+# Temp file which is not needed
+/tmp_file/
