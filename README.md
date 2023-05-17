@@ -24,8 +24,11 @@ The dataset in the zip file contains four parts:
   Shape of the dataset: (S, T, N, F), the implication of each parameter is as follows:
   
   S: number of samples
+  
   T: time window for each sample
+  
   N: number of stocks 
+  
   F: the number of features
 
 - `ret.pt`: `torch.tensor`
@@ -39,7 +42,9 @@ The dataset in the zip file contains four parts:
   The trading date of the dataset. The dataset segmentation is as follows:
   
   training dataset: `2010-01-01` to `2014-12-30`
+  
   evaluating dataset: `2015-01-01` to `2016-12-31`
+  
   testing dataset: `2017-01-01` to `2021-12-31`
 
 - `stocks.txt`: `List`
