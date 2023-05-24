@@ -7,14 +7,14 @@ import matplotlib.pyplot as plt
 def init_param():
     param = dict()
     param["init_value"] = 1
-    param["start_date"] = "2010-05-05"
-    param["end_date"] = "2014-12-30" 
+    param["start_date"] = "2018-01-01"
+    param["end_date"] = "2019-12-31" 
     param["threshold"] = 1
     param["days_back"] = 20
     param["fee"] = True
-    param["stock_price"] = "../backtest/close.csv"  # 股票池收盘价数据
-    param["stock_weight"] = "../backtest/FactorVAE/train/weights.csv" # 策略权重
-    param["result_savepath"] = "../backtest/FactorVAE/train/result.xlsx" # 结果保存路径
+    param["stock_price"] = "../backtest/close.csv"  # close data
+    param["stock_weight"] = "../backtest/FactorVAE/eval/weights.csv" # weight of strategy
+    param["result_savepath"] = "../backtest/FactorVAE/eval/result.xlsx" # result save path
     return param
 
 def backtest(param):
@@ -44,8 +44,8 @@ def backtest(param):
 
     # 日频计算持仓和权重
     value_lag1 = param["init_value"]
+
     for i, date in enumerate(date_list):
-        
         # 这里row是日频的
         row = np.where(weight_real.index == date)[0][0]
         weight_real.iloc[row, :-1], weight_real.iloc[row, -1] = weight.iloc[i], 1 - weight.iloc[i].sum()
@@ -70,7 +70,7 @@ def backtest(param):
             date_lead1 = date_list[i+1]
         except:
             date_lead1 = str(weight_real.index[-1]).split()[0]
-        
+
         # 对一个周期内的数据进行日频计算
         tmp_fee_daily = 0
         for j in range(1, len(weight_real.loc[date:date_lead1])):
@@ -98,7 +98,8 @@ def backtest(param):
             # 计算每日费后净值
             net_position_after_man.iloc[row_j, 0] = share_hold.iloc[row_j].sum() - tmp_fee_daily
         value_lag1 = share_hold.iloc[row_j].sum()
-        print(f"backtest from {date} to {date_lead1} has been done")
+        if (i % 100 == 0) or (i == len(date_list)-1):
+            print(f"backtest from {date} to {date_lead1} has been done")
 
     net_position_after_man.iloc[0, 0] = param["init_value"]
     net_position = share_hold.sum(axis = 1)
@@ -114,9 +115,9 @@ def backtest(param):
     with pd.ExcelWriter(param["result_savepath"]) as writer:
         for k, v in backtest_result.items():
             v.to_excel(writer, k)
-
     plt.plot(net_position_after_man)
     return backtest_result
+
 if __name__ == "__main__":
     param = init_param()
     backtest_result = backtest(param)

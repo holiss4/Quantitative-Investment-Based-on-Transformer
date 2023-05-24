@@ -1,12 +1,12 @@
 # Dataset which is too large to push
-/data/dataset_tensor/train/*.txt
 /data/dataset_tensor/train/*.pt
+/data/dataset_tensor/train/*.zip
 
-/data/dataset_tensor/test/*.txt
 /data/dataset_tensor/test/*.pt
+/data/dataset_tensor/test/*.zip
 
-/data/dataset_tensor/eval/*.txt
 /data/dataset_tensor/eval/*.pt
+/data/dataset_tensor/eval/*.zip
 
 /data/dataset_per_stocks/
 /data/dataset_qlib/

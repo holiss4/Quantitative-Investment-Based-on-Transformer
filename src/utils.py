@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from torch import nn
 from tqdm import tqdm
 from scipy import stats
 from IPython import display
@@ -126,18 +127,72 @@ def train_factorVAE(dataloader, model, optimizer, epochs, features_train, return
                 animator.add(epoch + batch / len(dataloader), (rankIC_train, rankIC_eval))
     return model
 
-def get_weights(model, features, type, stock_num = 50, repeat = 5):
+def get_weights(model, features, type, stock_num = 20, repeat = 5):
     "Generate stock weights for investment"
-    # fetch the dates and stocks list
+    # Fetch the dates and stocks list
     with open(f"../data/dataset_tensor/{type}/date.txt", "r") as file:
         dates = [date.split("\n")[0] for date in file.readlines()]
     with open(f"../data/dataset_tensor/{type}/stocks.txt", "r") as file:
         stocks = [stock.split("\n")[0] for stock in file.readlines()]
-    # calculate the weights based on predictions
-    weights = np.vstack([torch.argsort(torch.cat([model.prediction(features[0:1, :])[0].squeeze(-1) for _ in range(repeat)]).mean(dim = 0), 
-                                    descending = True).numpy() for i in tqdm(range(features.shape[0]))])
-    weights = np.where(weights < stock_num, 1 / stock_num, np.nan)
+    # Calculate the weights based on predictions
+    y_pred = sum([model.prediction(features)[0].squeeze(-1) for _ in tqdm(range(repeat))]) / repeat
+    weights = (y_pred >= y_pred.sort(descending=True)[0][:, stock_num-1:stock_num]).to(torch.float32).numpy() / stock_num
+    weights = np.where(weights == 0, np.nan, weights)
     weights = pd.DataFrame(index=dates, columns=stocks, data = weights)
     return weights
 
-#%% Utils for Transformer
+
+#%% Utils for time series model
+
+def dataset_dim_convertion_4to3(features, returns, reduction = True):
+    """Convert the dim of dataset from 4 to 2"""
+    time_span, features_num = features.shape[1], features.shape[3] 
+    return (features.permute(0, 2, 1, 3).reshape(-1, time_span, features_num),
+            returns.reshape(-1, 1))
+
+def grad_clipping(net, theta):  #@save
+    """Gradient clipping for LSTM"""
+    if isinstance(net, nn.Module):
+        params = [p for p in net.parameters() if p.requires_grad]
+    else:
+        params = net.params
+    norm = torch.sqrt(sum(torch.sum((p.grad ** 2)) for p in params))
+    if norm > theta:
+        for param in params:
+            param.grad[:] *= theta / norm
+
+def get_weights_ts(model, features, type, stock_nums = 20):
+    """Generate stock weight for investment"""
+    # Fetch the dates and stocks list
+    with torch.no_grad():
+        y_pred = model(features)
+    y_pred = y_pred.reshape(-1, 100)
+    with open(f"../data/dataset_tensor/{type}/date.txt", "r") as file:
+            dates = [date.split("\n")[0] for date in file.readlines()]
+    with open(f"../data/dataset_tensor/{type}/stocks.txt", "r") as file:
+        stocks = [stock.split("\n")[0] for stock in file.readlines()]
+    # Calculate the weights based on predictions
+    weights = (y_pred >= y_pred.sort(descending=True)[0][:, stock_nums-1:stock_nums]).to(torch.float32).numpy() / stock_nums
+    weights = np.where(weights == 0, np.nan, weights)
+    weights = pd.DataFrame(index=dates, columns=stocks, data = weights)
+    return weights
+
+def train_modelTS(dataloader, model, optimizer, loss, device, epochs, features_eval, returns_eval, model_name, eval_sample_size):
+    """Training time series models including LSTM Transformer and PatchTST"""
+    animator = Animator(xlabel="epochs", xlim=[0, epochs], legend=["MSE train", "MSE eval"])
+    for epoch in range(epochs):
+        print(f"====epoch:{epoch}====")
+        for batch, (X, y) in enumerate(dataloader):
+            X, y = X.to(device), y.to(device)
+            mse_train = loss(y, model(X))
+            optimizer.zero_grad()
+            mse_train.backward()
+            if model_name == "LSTM": 
+                grad_clipping(model, 1) # Gradient clipping for LSTM
+            optimizer.step()
+            if (batch % 100 == 0) and (batch > 0):
+                with torch.no_grad():
+                    eval_sample = list(RandomSampler(range(features_eval.shape[0]), num_samples=eval_sample_size))
+                    mse_eval = loss(model(features_eval[eval_sample, :]), returns_eval[eval_sample, :])
+                animator.add(epoch + batch / len(dataloader), (mse_train.item(), mse_eval.item()))
+    return model

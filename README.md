@@ -8,6 +8,7 @@ A quantitative investment project based on `FactorVAE` which is derived from the
 
 - backtest: weights and results from prediction and backtest.
 - data: features, labels, dates and stocks of training, evaluating and testing dataset.
+- models: the repository to store the optimal model including `FactorVAE`, `PatchTST`, `Transformer` and  `LSTM`.
 - reference: reference of this project.
 - src: source code of the project.
 
@@ -49,4 +50,20 @@ The dataset in the zip file contains four parts:
 
 - `stocks.txt`: `List`
 
-  The stock list of the project, which is same between different repository
+  The stock list of the project, which is same between different repository.
+
+---
+
+## Source Code Structure
+
+- `Models`: Package including the code of all the models.
+
+- `utils.py`: Utilities
+
+- `backtest.py`: The code of backtest system.
+
+- `dataset_generation.ipynb`: The code to preprocess the raw data and generate training, evaluating and testing dataset.
+
+- `model_train.ipynb`: Train and save models.
+
+- `model_backtest.ipynb`: Generate the weight for investment and backtest.
