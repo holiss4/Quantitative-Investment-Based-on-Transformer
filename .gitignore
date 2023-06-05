@@ -13,3 +13,6 @@
 
 # Temp file which is not needed
 /tmp_file/
+
+# slides
+/slides.pptx
