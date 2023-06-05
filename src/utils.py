@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from torch import nn
 from tqdm import tqdm
 from scipy import stats
+from tqdm import tqdm
 from IPython import display
 from matplotlib_inline import backend_inline
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler
@@ -94,12 +95,12 @@ def get_dataset(type):
     print(f"Feature size: {features_dataset.shape[3]}")
     return features_dataset, returns_dataset
 
-def get_dataloader_factorVAE(features, label, device, batch_size):
+def get_dataloader_factorVAE(features, label, device, batch_size, shuffle=True):
     """Fetch dataloader which is used for training factorVAE model"""
     features = torch.Tensor(features).to(device)
     label = torch.Tensor(label).to(device)
     dataset = TensorDataset(features, label)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
     return dataloader
 
 def calculate_rankIC(model, features, returns, sampler_num=200, repeat=10):
@@ -161,18 +162,26 @@ def grad_clipping(net, theta):  #@save
         for param in params:
             param.grad[:] *= theta / norm
 
-def get_weights_ts(model, features, type, stock_nums = 20):
+def get_weights_ts(model, test_dl, type, stock_nums = 20):
     """Generate stock weight for investment"""
     # Fetch the dates and stocks list
+
     with torch.no_grad():
-        y_pred = model(features)
-    y_pred = y_pred.reshape(-1, 100)
+        y_pred_all = 0
+        for batch, (X, y) in tqdm(enumerate(test_dl)):
+            y_pred = model(X)
+            if batch == 0:
+                y_pred_all = y_pred.clone()
+                continue
+            y_pred_all = torch.concat([y_pred_all, y_pred], dim=0)
+    y_pred_all = y_pred_all.reshape(-1, 100)
+    torch.cuda.empty_cache()
     with open(f"../data/dataset_tensor/{type}/date.txt", "r") as file:
             dates = [date.split("\n")[0] for date in file.readlines()]
     with open(f"../data/dataset_tensor/{type}/stocks.txt", "r") as file:
         stocks = [stock.split("\n")[0] for stock in file.readlines()]
     # Calculate the weights based on predictions
-    weights = (y_pred >= y_pred.sort(descending=True)[0][:, stock_nums-1:stock_nums]).to(torch.float32).numpy() / stock_nums
+    weights = (y_pred_all >= y_pred_all.sort(descending=True)[0][:, stock_nums-1:stock_nums]).to(torch.float32).cpu().numpy() / stock_nums
     weights = np.where(weights == 0, np.nan, weights)
     weights = pd.DataFrame(index=dates, columns=stocks, data = weights)
     return weights
@@ -180,6 +189,7 @@ def get_weights_ts(model, features, type, stock_nums = 20):
 def train_modelTS(dataloader, model, optimizer, loss, device, epochs, features_eval, returns_eval, model_name, eval_sample_size):
     """Training time series models including LSTM Transformer and PatchTST"""
     animator = Animator(xlabel="epochs", xlim=[0, epochs], legend=["MSE train", "MSE eval"])
+    print("sadasdsadsadas")
     for epoch in range(epochs):
         print(f"====epoch:{epoch}====")
         for batch, (X, y) in enumerate(dataloader):
@@ -193,6 +203,6 @@ def train_modelTS(dataloader, model, optimizer, loss, device, epochs, features_e
             if (batch % 100 == 0) and (batch > 0):
                 with torch.no_grad():
                     eval_sample = list(RandomSampler(range(features_eval.shape[0]), num_samples=eval_sample_size))
-                    mse_eval = loss(model(features_eval[eval_sample, :]), returns_eval[eval_sample, :])
+                    mse_eval = loss(model(features_eval[eval_sample, :].to(device)), returns_eval[eval_sample, :].to(device))
                 animator.add(epoch + batch / len(dataloader), (mse_train.item(), mse_eval.item()))
     return model

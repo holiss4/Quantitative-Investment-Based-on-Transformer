@@ -18,7 +18,7 @@ def init_param():
     return param
 
 def backtest(param):
-    # ³õÊ¼»¯
+    # ï¿½ï¿½Ê¼ï¿½ï¿½
     fee_in = 0.000
     fee_out = 0.000
     fee_man = 0.000
@@ -31,27 +31,27 @@ def backtest(param):
     close_price = close_price.loc[param["start_date"]:param["end_date"], weight.columns]
     close_rate = close_price.pct_change(axis = 0)
 
-    # ÉèÖÃ¹ÉÆ±È¨ÖØ, ³Ö²Ö, ·ÑÓÃ
+    # ï¿½ï¿½ï¿½Ã¹ï¿½Æ±È¨ï¿½ï¿½, ï¿½Ö²ï¿½, ï¿½ï¿½ï¿½ï¿½
     weight_real = pd.DataFrame(index = close_price.index, columns = close_price.columns.to_list() + ["cash"])
     share_hold = pd.DataFrame(index = close_price.index, columns = close_price.columns.to_list() + ["cash"])
     fee_detail = pd.DataFrame(index = weight.index, columns = ["current_fee", "accrued_fee"])
     fee_daily = pd.DataFrame(index = close_price.index, columns = ["management_fee"])
     net_position_after_man = pd.DataFrame(index = close_price.index, columns = ["net_value_after_management_fee"])
 
-    # »ñÈ¡»»²ÖÈÕÁÐ±í
+    # ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð±ï¿½
     date_list = weight.index.to_list()
     date_list = list(map(lambda x: str(x).split()[0], date_list))
 
-    # ÈÕÆµ¼ÆËã³Ö²ÖºÍÈ¨ÖØ
+    # ï¿½ï¿½Æµï¿½ï¿½ï¿½ï¿½Ö²Öºï¿½È¨ï¿½ï¿½
     value_lag1 = param["init_value"]
 
     for i, date in enumerate(date_list):
-        # ÕâÀïrowÊÇÈÕÆµµÄ
+        # ï¿½ï¿½ï¿½ï¿½rowï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½
         row = np.where(weight_real.index == date)[0][0]
         weight_real.iloc[row, :-1], weight_real.iloc[row, -1] = weight.iloc[i], 1 - weight.iloc[i].sum()
         share_hold.iloc[row, :-1], share_hold.iloc[row, -1] = weight.iloc[i] * value_lag1, weight_real.iloc[row, -1] * value_lag1
         
-        # ¼ÆËã·ÑÓÃ
+        # ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         if param["fee"]:
             if i == 0:
                 fee_detail.loc[date, "current_fee"] = param["init_value"] * fee_in
@@ -71,11 +71,11 @@ def backtest(param):
         except:
             date_lead1 = str(weight_real.index[-1]).split()[0]
 
-        # ¶ÔÒ»¸öÖÜÆÚÄÚµÄÊý¾Ý½øÐÐÈÕÆµ¼ÆËã
+        # ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½ï¿½ï¿½ï¿½Ý½ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½ï¿½ï¿½
         tmp_fee_daily = 0
         for j in range(1, len(weight_real.loc[date:date_lead1])):
             row_j = row + j
-            # ÓÃÓÚÅÐ¶ÏÊÇ·ñÊÇÖÜÆµµÄÆðÊ¼ÈÕ
+            # ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
             if weight_real.iloc[row_j-1, -1] == 1:
                 share_hold.iloc[row_j] = share_hold.iloc[row_j - 1]
                 weight_real.iloc[row_j] = weight_real.iloc[row_j - 1]
@@ -91,11 +91,11 @@ def backtest(param):
                     share_hold.iloc[row_j, :-1] = 0
                     weight_real.iloc[row_j, :-1], weight_real.iloc[row_j, -1] = 0, 1
                     
-            # ¼ÆËãÃ¿ÈÕµÄ·ÑÂÊ
+            # ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ÕµÄ·ï¿½ï¿½ï¿½
             tmp_fee_daily += share_hold.iloc[row_j, :-1].sum() * fee_man / 252
             fee_daily.iloc[row_j, 0] = share_hold.iloc[row_j, :-1].sum() * fee_man / 252
             
-            # ¼ÆËãÃ¿ÈÕ·Ñºó¾»Öµ
+            # ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½Õ·Ñºï¿½Öµ
             net_position_after_man.iloc[row_j, 0] = share_hold.iloc[row_j].sum() - tmp_fee_daily
         value_lag1 = share_hold.iloc[row_j].sum()
         if (i % 100 == 0) or (i == len(date_list)-1):
@@ -111,7 +111,7 @@ def backtest(param):
                        "share_hold": share_hold,
                        "accrued_fee": fee_detail,
                        "net_value_after_management_fee": net_position_after_man}
-    # ±£´æ»Ø²â½á¹û
+    # ï¿½ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½
     with pd.ExcelWriter(param["result_savepath"]) as writer:
         for k, v in backtest_result.items():
             v.to_excel(writer, k)
@@ -121,3 +121,4 @@ def backtest(param):
 if __name__ == "__main__":
     param = init_param()
     backtest_result = backtest(param)
+# %%
