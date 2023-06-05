@@ -140,6 +140,7 @@ def get_weights(model, features, type, stock_num = 20, repeat = 5):
     weights = (y_pred >= y_pred.sort(descending=True)[0][:, stock_num-1:stock_num]).to(torch.float32).numpy() / stock_num
     weights = np.where(weights == 0, np.nan, weights)
     weights = pd.DataFrame(index=dates, columns=stocks, data = weights)
+    weights = weights.shift(1).dropna(how="all", axis=0) # shift 1 day because of the cap between prediction and backtest
     return weights
 
 
@@ -165,7 +166,6 @@ def grad_clipping(net, theta):  #@save
 def get_weights_ts(model, test_dl, type, stock_nums = 20):
     """Generate stock weight for investment"""
     # Fetch the dates and stocks list
-
     with torch.no_grad():
         y_pred_all = 0
         for batch, (X, y) in tqdm(enumerate(test_dl)):
@@ -184,6 +184,9 @@ def get_weights_ts(model, test_dl, type, stock_nums = 20):
     weights = (y_pred_all >= y_pred_all.sort(descending=True)[0][:, stock_nums-1:stock_nums]).to(torch.float32).cpu().numpy() / stock_nums
     weights = np.where(weights == 0, np.nan, weights)
     weights = pd.DataFrame(index=dates, columns=stocks, data = weights)
+    weights = weights.shift(1).dropna(how="all", axis=0) # shift 1 day because of the cap between prediction and backtest
+    y_pred_df = pd.DataFrame(index=dates, columns=stocks, data=y_pred_all.numpy())
+    y_pred_df = y_pred_df.shift(2).dropna() # shift 2 day because of the cap between prediction and actual rate
     return weights
 
 def train_modelTS(dataloader, model, optimizer, loss, device, epochs, features_eval, returns_eval, model_name, eval_sample_size):
