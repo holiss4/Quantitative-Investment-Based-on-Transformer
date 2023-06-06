@@ -1,5 +1,6 @@
 #%%
 import torch
+import logging
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,6 +13,25 @@ from matplotlib_inline import backend_inline
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler
 
 #%% Utils for both models
+
+def get_logger(filename, verbosity=1, name=None):
+    """Logging the process of training"""
+    level_dict = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING}
+    formatter = logging.Formatter(
+        "[%(asctime)s][%(filename)s][line:%(lineno)d][%(levelname)s] %(message)s"
+    )
+    logger = logging.getLogger(name)
+    logger.setLevel(level_dict[verbosity])
+ 
+    fh = logging.FileHandler(filename, "w")
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+ 
+    sh = logging.StreamHandler()
+    sh.setFormatter(formatter)
+    logger.addHandler(sh)
+ 
+    return logger
 
 def try_gpu(i=0):
     """Determine the device for training"""
@@ -112,36 +132,45 @@ def calculate_rankIC(model, features, returns, sampler_num=200, repeat=10):
     rankIC = np.mean([stats.spearmanr(returns_prediction[i, :], returns_selected[i, :])[0] for i in range(returns_prediction.shape[0])])
     return rankIC
 
-def train_factorVAE(dataloader, model, optimizer, epochs, features_train, returns_train, features_eval, returns_eval, repeat = 5):
+def train_factorVAE(dataloader, model, optimizer, device, epochs, features_train, returns_train, features_eval, returns_eval, repeat = 5, eval_sample_size = 64):
     """Training factorVAE"""
-    animator = Animator(xlabel="epochs", xlim=[0, epochs], legend=["Train RankIC", "Eval RankIC"])
+    logger = get_logger("../models/logs/FactorVAE_training_log.log")
+    logger.info("Start training")
     for epoch in range(epochs):
-        print(f"=== Epoch: {epoch} ===")
         for batch, (feat, ret) in enumerate(dataloader):
             loss = model.run_model(feat, ret)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            if batch % 10 == 0:
-                rankIC_train = calculate_rankIC(model, features_train, returns_train, repeat = repeat)
-                rankIC_eval = calculate_rankIC(model, features_eval, returns_eval, repeat = repeat)
-                animator.add(epoch + batch / len(dataloader), (rankIC_train, rankIC_eval))
+            if (batch % 10 == 0) and (batch > 0):
+                with torch.no_grad():
+                    eval_sample = list(RandomSampler(range(features_eval.shape[0]), num_samples=eval_sample_size))
+                    features_eval, ret_eval = features_eval[eval_sample, :].to(device), returns_eval[eval_sample, :].to(device)
+                    loss_eval = model.run_model(features_eval, ret_eval)
+                logger.info("Epoch/Batch:{}/{} \t Train Loss: {:.5f} \t Eval Loss: {:.5f}".format(epoch, batch, loss.item(), loss_eval.item()))
+    logger.info("Finsh training")
     return model
 
-def get_weights(model, features, type, stock_num = 20, repeat = 5):
+def get_weights(model, test_dl, type, stock_num = 20, repeat = 5):
     "Generate stock weights for investment"
+    y_pred = []
+    with torch.no_grad():
+        for _, (X, y) in enumerate(test_dl):
+            y_pred.append(model.prediction(X)[0].squeeze(-1))
+    y_pred = torch.cat(y_pred, dim=0)
     # Fetch the dates and stocks list
     with open(f"../data/dataset_tensor/{type}/date.txt", "r") as file:
         dates = [date.split("\n")[0] for date in file.readlines()]
     with open(f"../data/dataset_tensor/{type}/stocks.txt", "r") as file:
         stocks = [stock.split("\n")[0] for stock in file.readlines()]
     # Calculate the weights based on predictions
-    y_pred = sum([model.prediction(features)[0].squeeze(-1) for _ in tqdm(range(repeat))]) / repeat
     weights = (y_pred >= y_pred.sort(descending=True)[0][:, stock_num-1:stock_num]).to(torch.float32).numpy() / stock_num
     weights = np.where(weights == 0, np.nan, weights)
     weights = pd.DataFrame(index=dates, columns=stocks, data = weights)
     weights = weights.shift(1).dropna(how="all", axis=0) # shift 1 day because of the cap between prediction and backtest
-    return weights
+    y_pred_df = pd.DataFrame(index=dates, columns=stocks, data=y_pred.numpy())
+    y_pred_df = y_pred_df.shift(2).dropna() # shift 2 day because of the cap between prediction and actual rate
+    return weights, y_pred_df
 
 
 #%% Utils for time series model
@@ -187,14 +216,13 @@ def get_weights_ts(model, test_dl, type, stock_nums = 20):
     weights = weights.shift(1).dropna(how="all", axis=0) # shift 1 day because of the cap between prediction and backtest
     y_pred_df = pd.DataFrame(index=dates, columns=stocks, data=y_pred_all.numpy())
     y_pred_df = y_pred_df.shift(2).dropna() # shift 2 day because of the cap between prediction and actual rate
-    return weights
+    return weights, y_pred_df
 
 def train_modelTS(dataloader, model, optimizer, loss, device, epochs, features_eval, returns_eval, model_name, eval_sample_size):
     """Training time series models including LSTM Transformer and PatchTST"""
-    animator = Animator(xlabel="epochs", xlim=[0, epochs], legend=["MSE train", "MSE eval"])
-    print("sadasdsadsadas")
+    logger = get_logger(f"../models/logs/{model_name}_training_log.log")
+    logger.info("Start training")
     for epoch in range(epochs):
-        print(f"====epoch:{epoch}====")
         for batch, (X, y) in enumerate(dataloader):
             X, y = X.to(device), y.to(device)
             mse_train = loss(y, model(X))
@@ -207,5 +235,6 @@ def train_modelTS(dataloader, model, optimizer, loss, device, epochs, features_e
                 with torch.no_grad():
                     eval_sample = list(RandomSampler(range(features_eval.shape[0]), num_samples=eval_sample_size))
                     mse_eval = loss(model(features_eval[eval_sample, :].to(device)), returns_eval[eval_sample, :].to(device))
-                animator.add(epoch + batch / len(dataloader), (mse_train.item(), mse_eval.item()))
+                logger.info("Epoch/Batch:{}/{} \t Train Loss: {:.5f} \t Eval Loss: {:.5f}".format(epoch, batch, mse_train.item(), mse_eval.item()))
+    logger.info("Finsh training")
     return model

@@ -1,0 +1,27 @@
+[2023-06-06 20:25:17,965][utils.py][line:138][INFO] Start training
+[2023-06-06 20:25:20,993][utils.py][line:150][INFO] Epoch/Batch:0/10 	 Train Loss: 2.19610 	 Eval Loss: 3.36611
+[2023-06-06 20:25:23,581][utils.py][line:150][INFO] Epoch/Batch:0/20 	 Train Loss: 1.36681 	 Eval Loss: 1.99568
+[2023-06-06 20:25:26,141][utils.py][line:150][INFO] Epoch/Batch:0/30 	 Train Loss: 1.08382 	 Eval Loss: 1.53279
+[2023-06-06 20:25:28,745][utils.py][line:150][INFO] Epoch/Batch:0/40 	 Train Loss: 0.95418 	 Eval Loss: 1.28640
+[2023-06-06 20:25:31,344][utils.py][line:150][INFO] Epoch/Batch:0/50 	 Train Loss: 0.87802 	 Eval Loss: 1.16625
+[2023-06-06 20:25:35,830][utils.py][line:150][INFO] Epoch/Batch:1/10 	 Train Loss: 0.78650 	 Eval Loss: 1.02191
+[2023-06-06 20:25:38,289][utils.py][line:150][INFO] Epoch/Batch:1/20 	 Train Loss: 0.74077 	 Eval Loss: 0.95280
+[2023-06-06 20:25:40,780][utils.py][line:150][INFO] Epoch/Batch:1/30 	 Train Loss: 0.69577 	 Eval Loss: 0.88859
+[2023-06-06 20:25:43,175][utils.py][line:150][INFO] Epoch/Batch:1/40 	 Train Loss: 0.65123 	 Eval Loss: 0.81713
+[2023-06-06 20:25:45,632][utils.py][line:150][INFO] Epoch/Batch:1/50 	 Train Loss: 0.59331 	 Eval Loss: 0.74059
+[2023-06-06 20:25:49,865][utils.py][line:150][INFO] Epoch/Batch:2/10 	 Train Loss: 0.47537 	 Eval Loss: 0.59241
+[2023-06-06 20:25:52,375][utils.py][line:150][INFO] Epoch/Batch:2/20 	 Train Loss: 0.39119 	 Eval Loss: 0.49157
+[2023-06-06 20:25:54,956][utils.py][line:150][INFO] Epoch/Batch:2/30 	 Train Loss: 0.28108 	 Eval Loss: 0.36748
+[2023-06-06 20:25:57,605][utils.py][line:150][INFO] Epoch/Batch:2/40 	 Train Loss: 0.12929 	 Eval Loss: 0.20416
+[2023-06-06 20:26:00,249][utils.py][line:150][INFO] Epoch/Batch:2/50 	 Train Loss: -0.09353 	 Eval Loss: -0.04826
+[2023-06-06 20:26:04,911][utils.py][line:150][INFO] Epoch/Batch:3/10 	 Train Loss: -1.07971 	 Eval Loss: -1.17914
+[2023-06-06 20:26:07,627][utils.py][line:150][INFO] Epoch/Batch:3/20 	 Train Loss: -2.07042 	 Eval Loss: -2.16665
+[2023-06-06 20:26:10,304][utils.py][line:150][INFO] Epoch/Batch:3/30 	 Train Loss: -2.28883 	 Eval Loss: -2.23275
+[2023-06-06 20:26:12,912][utils.py][line:150][INFO] Epoch/Batch:3/40 	 Train Loss: -2.10358 	 Eval Loss: -2.20302
+[2023-06-06 20:26:15,521][utils.py][line:150][INFO] Epoch/Batch:3/50 	 Train Loss: -2.26157 	 Eval Loss: -2.23496
+[2023-06-06 20:26:19,921][utils.py][line:150][INFO] Epoch/Batch:4/10 	 Train Loss: -2.25244 	 Eval Loss: -2.25769
+[2023-06-06 20:26:22,426][utils.py][line:150][INFO] Epoch/Batch:4/20 	 Train Loss: -2.33217 	 Eval Loss: -2.25080
+[2023-06-06 20:26:24,975][utils.py][line:150][INFO] Epoch/Batch:4/30 	 Train Loss: -2.37011 	 Eval Loss: -2.26296
+[2023-06-06 20:26:27,542][utils.py][line:150][INFO] Epoch/Batch:4/40 	 Train Loss: -2.38172 	 Eval Loss: -2.22547
+[2023-06-06 20:26:30,144][utils.py][line:150][INFO] Epoch/Batch:4/50 	 Train Loss: -2.18969 	 Eval Loss: -2.26093
+[2023-06-06 20:26:31,902][utils.py][line:151][INFO] Finsh training

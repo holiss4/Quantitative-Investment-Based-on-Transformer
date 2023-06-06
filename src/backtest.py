@@ -15,6 +15,7 @@ def init_param():
     param["stock_price"] = "../backtest/close.csv"  # close data
     param["stock_weight"] = "../backtest/FactorVAE/eval/weights.csv" # weight of strategy
     param["result_savepath"] = "../backtest/FactorVAE/eval/result.xlsx" # result save path
+    param["figure_savepath"] = "../backtest/FactorVAE/eval/net_value.png" # figure save path
     return param
 
 def backtest(param):
@@ -116,6 +117,7 @@ def backtest(param):
         for k, v in backtest_result.items():
             v.to_excel(writer, k)
     plt.plot(net_position_after_man)
+    plt.savefig(param["figure_savepath"])
     return backtest_result
 
 if __name__ == "__main__":
